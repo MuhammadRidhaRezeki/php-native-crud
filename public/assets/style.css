@@ -1,0 +1,13 @@
+/* php-native-crud — small tweaks on top of Bootstrap 5. */
+
+body {
+    background-color: #f8f9fa;
+}
+
+.table th {
+    white-space: nowrap;
+}
+
+.navbar-brand {
+    font-weight: 600;
+}
