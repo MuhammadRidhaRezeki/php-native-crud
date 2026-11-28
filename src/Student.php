@@ -10,19 +10,24 @@ declare(strict_types=1);
 final class Student
 {
     /**
-     * All students, newest first. Optional $search filters by name or NIM.
+     * One page of students, newest first. Optional $search filters by name
+     * or NIM. $page is 1-based; $perPage is clamped to 1–100.
      *
      * @return array<int, array<string, mixed>>
      */
-    public static function all(?string $search = null): array
+    public static function all(?string $search = null, int $page = 1, int $perPage = 10): array
     {
+        $page    = max(1, $page);
+        $perPage = min(100, max(1, $perPage));
+        $offset  = ($page - 1) * $perPage;
+
         $sql = 'SELECT * FROM students';
 
         if ($search !== null && $search !== '') {
             $sql .= ' WHERE name LIKE :search OR nim LIKE :search';
         }
 
-        $sql .= ' ORDER BY id DESC';
+        $sql .= ' ORDER BY id DESC LIMIT :limit OFFSET :offset';
 
         $stmt = db()->prepare($sql);
 
@@ -30,6 +35,8 @@ final class Student
             $stmt->bindValue(':search', '%' . $search . '%', PDO::PARAM_STR);
         }
 
+        $stmt->bindValue(':limit', $perPage, PDO::PARAM_INT);
+        $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
         $stmt->execute();
 
         return $stmt->fetchAll();
@@ -96,9 +103,23 @@ final class Student
         return $stmt->execute([':id' => $id]);
     }
 
-    public static function count(): int
+    /**
+     * Number of students, optionally filtered by the same $search as all().
+     */
+    public static function count(?string $search = null): int
     {
-        return (int) db()->query('SELECT COUNT(*) FROM students')->fetchColumn();
+        $sql = 'SELECT COUNT(*) FROM students';
+
+        if ($search !== null && $search !== '') {
+            $sql .= ' WHERE name LIKE :search OR nim LIKE :search';
+            $stmt = db()->prepare($sql);
+            $stmt->bindValue(':search', '%' . $search . '%', PDO::PARAM_STR);
+            $stmt->execute();
+
+            return (int) $stmt->fetchColumn();
+        }
+
+        return (int) db()->query($sql)->fetchColumn();
     }
 
     /**
