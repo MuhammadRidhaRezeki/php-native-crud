@@ -7,6 +7,7 @@ A clean, reusable **PHP (native, no framework) + MySQL CRUD starter** — studen
 ## Features
 
 - Full CRUD for students: list (with search), create, edit, delete
+- **Paginated list view** — 10 students per page, with page numbers and Previous/Next links that keep the active search
 - **PDO + prepared statements everywhere** — no raw SQL interpolation
 - Server-side validation (required fields, unique NIM & email, valid email format)
 - Flash messages (success / error) via session
@@ -80,7 +81,7 @@ php-native-crud/
 
 ## Roadmap
 
-- [ ] Pagination on the list view
+- [x] Pagination on the list view (10 per page, search-preserving links)
 - [ ] Sortable columns
 - [ ] CSV export of the student list
 - [ ] Login (admin-only access) with password hashing
