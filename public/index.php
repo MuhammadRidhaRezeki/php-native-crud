@@ -10,8 +10,25 @@ require_once __DIR__ . '/../src/Student.php';
 
 $pageTitle = 'Students';
 $search = trim($_GET['q'] ?? '');
-$students = Student::all($search === '' ? null : $search);
-$total = Student::count();
+$filter = $search === '' ? null : $search;
+
+$perPage    = 10;
+$total      = Student::count($filter);
+$totalPages = max(1, (int) ceil($total / $perPage));
+$page       = min(max(1, (int) ($_GET['page'] ?? 1)), $totalPages);
+$students   = Student::all($filter, $page, $perPage);
+$firstShown = $total === 0 ? 0 : ($page - 1) * $perPage + 1;
+$lastShown  = min($total, $page * $perPage);
+
+/** Link to a list page, keeping the current search query. */
+$pageUrl = static function (int $p) use ($search): string {
+    $params = ['page' => $p];
+    if ($search !== '') {
+        $params['q'] = $search;
+    }
+
+    return 'index.php?' . http_build_query($params);
+};
 
 require_once __DIR__ . '/../includes/header.php';
 ?>
@@ -75,6 +92,44 @@ require_once __DIR__ . '/../includes/header.php';
                 <?php endforeach; ?>
             </tbody>
         </table>
+    </div>
+<?php endif; ?>
+
+<?php if ($totalPages > 1): ?>
+    <div class="d-flex justify-content-between align-items-center mt-3">
+        <p class="text-muted mb-0">
+            Showing <?= $firstShown ?>–<?= $lastShown ?> of <?= $total ?> students
+        </p>
+        <nav aria-label="Student list pages">
+            <ul class="pagination mb-0">
+                <li class="page-item<?= $page <= 1 ? ' disabled' : '' ?>">
+                    <a class="page-link" href="<?= $page <= 1 ? '#' : e($pageUrl($page - 1)) ?>"
+                       aria-label="Previous page">&laquo;</a>
+                </li>
+                <?php
+                // Numbered pages: always show first/last, plus a window around the current page.
+                $shown = [];
+                foreach (array_merge([1, $totalPages], range($page - 2, $page + 2)) as $p) {
+                    if ($p >= 1 && $p <= $totalPages) {
+                        $shown[$p] = true;
+                    }
+                }
+                ksort($shown);
+                $prev = 0;
+                foreach (array_keys($shown) as $p):
+                    if ($prev !== 0 && $p - $prev > 1): ?>
+                        <li class="page-item disabled"><span class="page-link">&hellip;</span></li>
+                    <?php endif; ?>
+                    <li class="page-item<?= $p === $page ? ' active' : '' ?>">
+                        <a class="page-link" href="<?= e($pageUrl($p)) ?>"><?= $p ?></a>
+                    </li>
+                <?php $prev = $p; endforeach; ?>
+                <li class="page-item<?= $page >= $totalPages ? ' disabled' : '' ?>">
+                    <a class="page-link" href="<?= $page >= $totalPages ? '#' : e($pageUrl($page + 1)) ?>"
+                       aria-label="Next page">&raquo;</a>
+                </li>
+            </ul>
+        </nav>
     </div>
 <?php endif; ?>
 
